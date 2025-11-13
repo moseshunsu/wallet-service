@@ -1,0 +1,17 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: wallet-service
+
+  # R2DBC PostgreSQL Configuration
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5431/wallet_db
+    username: myuser
+    password: secret
+
+    # Connection Pool Configuration
+    pool:
+      initial-size: 10
+      max-size: 20
