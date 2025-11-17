@@ -1,9 +1,0 @@
-databaseChangeLog:
-  - changeSet:
-      id: 001-initial-setup
-      author: Moses Hunsu
-      comment: Initial database setup
-      changes:
-        - sql:
-            comment: Placeholder for initial setup
-            sql: SELECT 1

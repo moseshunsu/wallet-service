@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-wallet-table
+      author: Moses Hunsu
+      comment: Create wallets table with audit fields
+      changes:
+        - sqlFile:
+            path: db/changelog/sql/001-create-wallets-table.sql
