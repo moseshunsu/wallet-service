@@ -23,7 +23,6 @@ public class Wallet extends AuditableData<Wallet> {
     private BigDecimal balance;
 
     public Wallet applyCreated(String userId) {
-        this.id        = UUID.randomUUID();
         this.userId    = userId;
         this.balance   = BigDecimal.ZERO;
         this.createdAt = Instant.now();

@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS wallets
 (
-    id                  UUID PRIMARY KEY,
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id             VARCHAR(255) NOT NULL UNIQUE,
     balance             DECIMAL(19, 4) DEFAULT 0 NOT NULL,
 
