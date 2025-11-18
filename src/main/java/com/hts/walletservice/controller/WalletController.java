@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -20,6 +21,17 @@ public class WalletController {
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<Wallet> createWallet(@RequestBody @Valid CreateWalletRequest request) {
         return walletService.createWallet(request.userId());
+    }
+
+    @GetMapping("/{userId}")
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<Wallet> getWallet(@PathVariable String userId) {
+        return walletService.getWallet(userId);
+    }
+
+    @GetMapping
+    public Flux<Wallet> readCollection() {
+        return walletService.readCollection();
     }
 
 }

@@ -5,7 +5,10 @@ import com.hts.walletservice.repository.WalletRepository;
 import com.hts.walletservice.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -28,6 +31,19 @@ public class WalletServiceImpl implements WalletService {
                     Wallet wallet = new Wallet().applyCreated(userId);
                     return walletRepository.save(wallet);
                 }));
+    }
+
+    @Override
+    public Mono<Wallet> getWallet(String userId) {
+        return walletRepository.findByUserId(userId)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No wallet found for userId: " + userId))
+                );
+    }
+
+    @Override
+    public Flux<Wallet> readCollection() {
+        return walletRepository.findAll();
     }
 
 }
