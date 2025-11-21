@@ -4,6 +4,8 @@ import com.hts.walletservice.model.Wallet;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
+
 public interface WalletService {
 
     Mono<Wallet> createWallet(String userId);
@@ -11,4 +13,6 @@ public interface WalletService {
     Mono<Wallet> getWallet(String userId);
 
     Flux<Wallet> readCollection();
+
+    Mono<Wallet> depositMoney(String userId, BigDecimal amount);
 }

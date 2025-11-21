@@ -11,6 +11,9 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -44,6 +47,21 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public Flux<Wallet> readCollection() {
         return walletRepository.findAll();
+    }
+
+    @Override
+    public Mono<Wallet> depositMoney(String userId, BigDecimal amount) {
+        return walletRepository.findByUserId(userId)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No wallet found for userId: " + userId
+                )))
+                .flatMap(wallet -> {
+                    var balance = wallet.getBalance().add(amount);
+                    wallet.setBalance(balance);
+                    wallet.setUpdatedAt(Instant.now());
+                    return walletRepository.save(wallet);
+                });
     }
 
 }

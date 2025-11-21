@@ -1,6 +1,7 @@
 package com.hts.walletservice.controller;
 
 import com.hts.walletservice.dto.request.CreateWalletRequest;
+import com.hts.walletservice.dto.request.DepositMoneyRequest;
 import com.hts.walletservice.model.Wallet;
 import com.hts.walletservice.service.WalletService;
 import jakarta.validation.Valid;
@@ -32,6 +33,12 @@ public class WalletController {
     @GetMapping
     public Flux<Wallet> readCollection() {
         return walletService.readCollection();
+    }
+
+    @PostMapping("{userId}/deposit")
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<Wallet> depositMoney(@PathVariable String userId, @RequestBody @Valid DepositMoneyRequest request) {
+        return walletService.depositMoney(userId, request.amount());
     }
 
 }
