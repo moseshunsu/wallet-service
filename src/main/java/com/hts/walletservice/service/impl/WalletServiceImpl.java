@@ -27,7 +27,9 @@ public class WalletServiceImpl implements WalletService {
 
         return walletRepository.findByUserId(userId)
                 .flatMap(existing ->
-                        Mono.<Wallet>error(new RuntimeException("Wallet already exists for user: " + userId))
+                        Mono.<Wallet>error(new ResponseStatusException(
+                                HttpStatus.CONFLICT,
+                                "Wallet already exists for user: " + userId))
                 )
                 .switchIfEmpty(Mono.defer(() -> {
                     log.info("No existing wallet found, creating new wallet for userId: {}", userId);
@@ -39,9 +41,7 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public Mono<Wallet> getWallet(String userId) {
         return walletRepository.findByUserId(userId)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "No wallet found for userId: " + userId))
-                );
+                .switchIfEmpty(Mono.error(notFound(userId)));
     }
 
     @Override
@@ -52,10 +52,7 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public Mono<Wallet> depositMoney(String userId, BigDecimal amount) {
         return walletRepository.findByUserId(userId)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "No wallet found for userId: " + userId
-                )))
+                .switchIfEmpty(Mono.error(notFound(userId)))
                 .flatMap(wallet -> {
                     var balance = wallet.getBalance().add(amount);
                     wallet.setBalance(balance);
@@ -69,9 +66,13 @@ public class WalletServiceImpl implements WalletService {
         return walletRepository.deleteByUserId(userId)
                 .flatMap(count -> count > 1
                         ? Mono.empty()
-                        : Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                "No wallet found for userId: " + userId))
+                        : Mono.error(notFound(userId))
                 );
+    }
+
+    private ResponseStatusException notFound(String userId) {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "No wallet found for userId: " + userId);
     }
 
 }
