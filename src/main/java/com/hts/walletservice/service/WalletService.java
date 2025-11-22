@@ -14,6 +14,8 @@ public interface WalletService {
 
     Flux<Wallet> readCollection();
 
+    Flux<Wallet> readCollection(Integer pageNumber, Integer size);
+
     Mono<Wallet> depositMoney(String userId, BigDecimal amount);
 
     Mono<Void> deleteWallet(String userId);

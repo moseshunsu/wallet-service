@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/wallets")
 @RequiredArgsConstructor
@@ -33,6 +35,12 @@ public class WalletController {
     @GetMapping
     public Flux<Wallet> readCollection() {
         return walletService.readCollection();
+    }
+
+    @GetMapping("/paginated")
+    public Flux<Wallet> readCollection(@RequestParam(defaultValue = "1") Integer pageNumber,
+                                       @RequestParam(defaultValue = "3") Integer size) {
+        return walletService.readCollection(pageNumber, size);
     }
 
     @PostMapping("{userId}/deposit")

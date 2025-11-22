@@ -50,6 +50,11 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
+    public Flux<Wallet> readCollection(Integer pageNumber, Integer size) {
+        return walletRepository.findAllWithPagination(size, (pageNumber - 1) * size);
+    }
+
+    @Override
     public Mono<Wallet> depositMoney(String userId, BigDecimal amount) {
         return walletRepository.findByUserId(userId)
                 .switchIfEmpty(Mono.error(notFound(userId)))
