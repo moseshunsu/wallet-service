@@ -41,4 +41,10 @@ public class WalletController {
         return walletService.depositMoney(userId, request.amount());
     }
 
+    @DeleteMapping("/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> deleteWallet(@PathVariable String userId) {
+        return walletService.deleteWallet(userId);
+    }
+
 }

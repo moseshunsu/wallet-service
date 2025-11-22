@@ -64,4 +64,14 @@ public class WalletServiceImpl implements WalletService {
                 });
     }
 
+    @Override
+    public Mono<Void> deleteWallet(String userId) {
+        return walletRepository.deleteByUserId(userId)
+                .flatMap(count -> count > 1
+                        ? Mono.empty()
+                        : Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                "No wallet found for userId: " + userId))
+                );
+    }
+
 }

@@ -10,4 +10,6 @@ public interface WalletRepository extends R2dbcRepository<Wallet, UUID> {
 
     Mono<Wallet> findByUserId(String userId);
 
+    Mono<Integer> deleteByUserId(String userId);
+
 }
