@@ -2,6 +2,7 @@ package com.hts.walletservice.controller;
 
 import com.hts.walletservice.dto.request.CreateWalletRequest;
 import com.hts.walletservice.dto.request.DepositMoneyRequest;
+import com.hts.walletservice.dto.response.PagedResponse;
 import com.hts.walletservice.model.Wallet;
 import com.hts.walletservice.service.WalletService;
 import jakarta.validation.Valid;
@@ -10,8 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/wallets")
@@ -38,8 +37,8 @@ public class WalletController {
     }
 
     @GetMapping("/paginated")
-    public Flux<Wallet> readCollection(@RequestParam(defaultValue = "1") Integer pageNumber,
-                                       @RequestParam(defaultValue = "3") Integer size) {
+    public Mono<PagedResponse> readCollection(@RequestParam(defaultValue = "1") Integer pageNumber,
+                                              @RequestParam(defaultValue = "3") Integer size) {
         return walletService.readCollection(pageNumber, size);
     }
 

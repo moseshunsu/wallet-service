@@ -10,11 +10,11 @@ import java.util.UUID;
 
 public interface WalletRepository extends R2dbcRepository<Wallet, UUID> {
 
-    Mono<Wallet> findByUserId(String userId);
+    @Query("SELECT * FROM wallets LIMIT :limit OFFSET :offset")
+    Flux<Wallet>  findAllWithPagination(int limit, int offset);
+
+    Mono<Wallet>  findByUserId(String userId);
 
     Mono<Integer> deleteByUserId(String userId);
-
-    @Query("SELECT * FROM wallets LIMIT :limit OFFSET :offset")
-    Flux<Wallet> findAllWithPagination(int limit, int offset);
 
 }

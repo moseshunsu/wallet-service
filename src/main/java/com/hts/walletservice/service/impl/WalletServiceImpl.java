@@ -1,5 +1,6 @@
 package com.hts.walletservice.service.impl;
 
+import com.hts.walletservice.dto.response.PagedResponse;
 import com.hts.walletservice.model.Wallet;
 import com.hts.walletservice.repository.WalletRepository;
 import com.hts.walletservice.service.WalletService;
@@ -13,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -50,8 +52,23 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    public Flux<Wallet> readCollection(Integer pageNumber, Integer size) {
-        return walletRepository.findAllWithPagination(size, (pageNumber - 1) * size);
+    public Mono<PagedResponse> readCollection(Integer pageNumber, Integer size) {
+        return walletRepository.findAllWithPagination(size, (pageNumber - 1) * size)
+                .collectList()
+                .zipWith(countAllWallets())
+                .map(tuple -> {
+                    List<Wallet> wallets = tuple.getT1();
+                    Long totalItems = tuple.getT2();
+                    int totalPages = (int) Math.ceil((double) totalItems / size);
+
+                    return new PagedResponse(
+                            wallets,
+                            pageNumber,
+                            size,
+                            totalItems,
+                            totalPages
+                    );
+                });
     }
 
     @Override
@@ -78,6 +95,10 @@ public class WalletServiceImpl implements WalletService {
     private ResponseStatusException notFound(String userId) {
         return new ResponseStatusException(HttpStatus.NOT_FOUND,
                 "No wallet found for userId: " + userId);
+    }
+
+    private Mono<Long> countAllWallets() {
+        return walletRepository.count();
     }
 
 }
