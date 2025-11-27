@@ -2,6 +2,7 @@ package com.hts.walletservice.controller;
 
 import com.hts.walletservice.dto.request.CreateWalletRequest;
 import com.hts.walletservice.dto.request.DepositMoneyRequest;
+import com.hts.walletservice.dto.request.WithdrawWalletRequest;
 import com.hts.walletservice.dto.response.PagedResponse;
 import com.hts.walletservice.model.Wallet;
 import com.hts.walletservice.service.WalletService;
@@ -47,6 +48,13 @@ public class WalletController {
     public Mono<Wallet> depositMoney(@PathVariable String userId, @RequestBody @Valid DepositMoneyRequest request) {
         return walletService.depositMoney(userId, request.amount());
     }
+
+    @PostMapping("{userId}/withdraw")
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<Wallet> withdrawMoney(@PathVariable String userId, @RequestBody @Valid WithdrawWalletRequest request) {
+        return walletService.withdrawMoney(userId, request.amount());
+    }
+
 
     @DeleteMapping("/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

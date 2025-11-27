@@ -15,6 +15,7 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Predicate;
 
 @Slf4j
 @Service
@@ -90,6 +91,26 @@ public class WalletServiceImpl implements WalletService {
                         ? Mono.empty()
                         : Mono.error(notFound(userId))
                 );
+    }
+
+    @Override
+    public Mono<Wallet> withdrawMoney(String userId, BigDecimal amount) {
+        return walletRepository.findByUserId(userId)
+                .switchIfEmpty(Mono.error(notFound(userId)))
+                .filter(wallet -> validateWithdrawalAmount(wallet, amount))
+                .switchIfEmpty(Mono.error(new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Insufficient Amount!!!")))
+                .flatMap(wallet -> {
+                    wallet.setBalance(wallet.getBalance().subtract(amount));
+                    wallet.setUpdatedAt(Instant.now());
+
+                    return walletRepository.save(wallet);
+                });
+    }
+
+    private Boolean validateWithdrawalAmount(Wallet wallet, BigDecimal amount) {
+        return wallet.getBalance().subtract(amount).compareTo(BigDecimal.ZERO) >= 0;
     }
 
     private ResponseStatusException notFound(String userId) {

@@ -20,4 +20,6 @@ public interface WalletService {
     Mono<Wallet> depositMoney(String userId, BigDecimal amount);
 
     Mono<Void> deleteWallet(String userId);
+
+    Mono<Wallet> withdrawMoney(String userId,  BigDecimal amount);
 }
