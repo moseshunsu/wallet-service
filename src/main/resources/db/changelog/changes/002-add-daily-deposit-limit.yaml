@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 202512061743-add-daily-deposit-limit
+      author: Moses Hunsu
+      comment: Added daily deposit limit
+      changes:
+        - sqlFile:
+            path: db/changelog/sql/002-add-daily-deposit-limit.sql
