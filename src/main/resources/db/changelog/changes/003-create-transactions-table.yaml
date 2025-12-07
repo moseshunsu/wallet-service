@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 202512062234-create-transactions-table
+      author: Moses Hunsu
+      comment: Created transactions table
+      changes:
+        - sqlFile:
+            path: db/changelog/sql/003-create-transactions-table.sql

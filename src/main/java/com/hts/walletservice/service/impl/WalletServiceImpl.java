@@ -1,7 +1,10 @@
 package com.hts.walletservice.service.impl;
 
 import com.hts.walletservice.dto.response.PagedResponse;
+import com.hts.walletservice.model.Transaction;
+import com.hts.walletservice.model.Type;
 import com.hts.walletservice.model.Wallet;
+import com.hts.walletservice.repository.TransactionRepository;
 import com.hts.walletservice.repository.WalletRepository;
 import com.hts.walletservice.service.WalletService;
 import lombok.RequiredArgsConstructor;
@@ -13,9 +16,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Predicate;
+
+import static com.hts.walletservice.model.Type.DEPOSIT;
+import static com.hts.walletservice.model.Type.WITHDRAWAL;
 
 @Slf4j
 @Service
@@ -23,6 +29,8 @@ import java.util.function.Predicate;
 public class WalletServiceImpl implements WalletService {
 
     private final WalletRepository walletRepository;
+    private final TransactionRepository transactionRepository;
+    private final Clock clock;
 
     @Override
     public Mono<Wallet> createWallet(String userId) {
@@ -36,7 +44,7 @@ public class WalletServiceImpl implements WalletService {
                 )
                 .switchIfEmpty(Mono.defer(() -> {
                     log.info("No existing wallet found, creating new wallet for userId: {}", userId);
-                    Wallet wallet = new Wallet().applyCreated(userId);
+                    Wallet wallet = new Wallet().applyCreated(userId, clock.instant());
                     return walletRepository.save(wallet);
                 }));
     }
@@ -81,7 +89,10 @@ public class WalletServiceImpl implements WalletService {
                     wallet.setBalance(balance);
                     wallet.setUpdatedAt(Instant.now());
                     return walletRepository.save(wallet);
-                });
+                })
+                .flatMap(savedWallet -> createTransaction(savedWallet, DEPOSIT, amount, clock.instant())
+                        .thenReturn(savedWallet)
+                );
     }
 
     @Override
@@ -104,9 +115,16 @@ public class WalletServiceImpl implements WalletService {
                 .flatMap(wallet -> {
                     wallet.setBalance(wallet.getBalance().subtract(amount));
                     wallet.setUpdatedAt(Instant.now());
-
                     return walletRepository.save(wallet);
-                });
+                })
+                .flatMap(savedWallet -> createTransaction(savedWallet, WITHDRAWAL, amount, clock.instant())
+                        .thenReturn(savedWallet)
+                );
+    }
+
+    private Mono<Transaction> createTransaction(Wallet wallet, Type type, BigDecimal amount, Instant now) {
+        var transaction = new Transaction().applyCreated(wallet, type, amount, now);
+        return transactionRepository.save(transaction);
     }
 
     private Boolean validateWithdrawalAmount(Wallet wallet, BigDecimal amount) {

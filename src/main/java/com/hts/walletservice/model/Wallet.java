@@ -23,12 +23,12 @@ public class Wallet extends AuditableData<Wallet> {
     private BigDecimal balance;
     private BigDecimal dailyDepositLimit;
 
-    public Wallet applyCreated(String userId) {
+    public Wallet applyCreated(String userId, Instant now) {
         this.userId = userId;
         this.balance = BigDecimal.ZERO;
         this.dailyDepositLimit = BigDecimal.valueOf(1000);
-        this.createdAt = Instant.now();
-        this.updatedAt = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
 
         return this;
     }
