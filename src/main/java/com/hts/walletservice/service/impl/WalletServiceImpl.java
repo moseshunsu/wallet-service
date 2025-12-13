@@ -14,9 +14,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
@@ -84,15 +87,46 @@ public class WalletServiceImpl implements WalletService {
     public Mono<Wallet> depositMoney(String userId, BigDecimal amount) {
         return walletRepository.findByUserId(userId)
                 .switchIfEmpty(Mono.error(notFound(userId)))
-                .flatMap(wallet -> {
-                    var balance = wallet.getBalance().add(amount);
-                    wallet.setBalance(balance);
-                    wallet.setUpdatedAt(Instant.now());
-                    return walletRepository.save(wallet);
-                })
+                .flatMap(this::getSumDeposits)
+                .flatMap(tuple -> validateDepositLimit(tuple, amount))
+                .flatMap(wallet -> updateWallet(wallet, amount))
                 .flatMap(savedWallet -> createTransaction(savedWallet, DEPOSIT, amount, clock.instant())
                         .thenReturn(savedWallet)
                 );
+    }
+
+    private Mono<Tuple2<Wallet, BigDecimal>> getSumDeposits(Wallet wallet) {
+        return transactionRepository.findAllByWalletIdAndTypeAndTimestampAfter(
+                        wallet.getId(),
+                        DEPOSIT,
+                        clock.instant().minus(Duration.ofHours(24))
+                )
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .map(sumDeposits -> Tuples.of(wallet, sumDeposits));
+    }
+
+    private Mono<Wallet> validateDepositLimit(Tuple2<Wallet, BigDecimal> tuple, BigDecimal amount) {
+        var wallet = tuple.getT1();
+        var currentDayDeposits = tuple.getT2();
+        var totalIncludingNewDeposit = currentDayDeposits.add(amount);
+        var dailyLimit = wallet.getDailyDepositLimit();
+
+        if (totalIncludingNewDeposit.compareTo(dailyLimit) > 0) {
+            return Mono.error(new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    String.format("Deposit limit exceeded. Limit: %s, Current: %s, Attempted: %s",
+                            dailyLimit, currentDayDeposits, amount)));
+        }
+
+        return Mono.just(wallet);
+    }
+
+    private Mono<Wallet> updateWallet(Wallet wallet, BigDecimal amount) {
+        var balance = wallet.getBalance().add(amount);
+        wallet.setBalance(balance);
+        wallet.setUpdatedAt(clock.instant());
+        return walletRepository.save(wallet);
     }
 
     @Override
