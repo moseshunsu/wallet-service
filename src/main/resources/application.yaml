@@ -15,3 +15,8 @@ spring:
     pool:
       initial-size: 10
       max-size: 20
+
+  data:
+    redis:
+      host: localhost
+      port: 6379

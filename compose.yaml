@@ -7,3 +7,10 @@ services:
       - 'POSTGRES_USER=myuser'
     ports:
       - '5431:5432'
+
+  redis:
+    container_name: redis
+    hostname: redis
+    image: redis:6.2
+    ports:
+      - '6379:6379'

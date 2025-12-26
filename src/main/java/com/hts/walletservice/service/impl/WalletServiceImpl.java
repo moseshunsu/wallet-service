@@ -1,5 +1,6 @@
 package com.hts.walletservice.service.impl;
 
+import com.hts.walletservice.common.cache.WalletCache;
 import com.hts.walletservice.dto.response.PagedResponse;
 import com.hts.walletservice.model.Transaction;
 import com.hts.walletservice.model.Type;
@@ -34,6 +35,7 @@ public class WalletServiceImpl implements WalletService {
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
     private final Clock clock;
+    private final WalletCache walletCache;
 
     @Override
     public Mono<Wallet> createWallet(String userId) {
@@ -54,8 +56,11 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public Mono<Wallet> getWallet(String userId) {
-        return walletRepository.findByUserId(userId)
-                .switchIfEmpty(Mono.error(notFound(userId)));
+        return walletCache.get(userId)
+                .switchIfEmpty(walletRepository.findByUserId(userId)
+                        .switchIfEmpty(Mono.error(notFound(userId)))
+                        .flatMap(walletCache::set)
+                );
     }
 
     @Override
@@ -91,8 +96,8 @@ public class WalletServiceImpl implements WalletService {
                 .flatMap(tuple -> validateDepositLimit(tuple, amount))
                 .flatMap(wallet -> updateWallet(wallet, amount))
                 .flatMap(savedWallet -> createTransaction(savedWallet, DEPOSIT, amount, clock.instant())
-                        .thenReturn(savedWallet)
-                );
+                        .thenReturn(savedWallet))
+                .flatMap(savedWallet -> walletCache.remove(savedWallet.getUserId()).thenReturn(savedWallet));
     }
 
     private Mono<Tuple2<Wallet, BigDecimal>> getSumDeposits(Wallet wallet) {
@@ -152,8 +157,8 @@ public class WalletServiceImpl implements WalletService {
                     return walletRepository.save(wallet);
                 })
                 .flatMap(savedWallet -> createTransaction(savedWallet, WITHDRAWAL, amount, clock.instant())
-                        .thenReturn(savedWallet)
-                );
+                        .thenReturn(savedWallet))
+                .flatMap(savedWallet -> walletCache.remove(savedWallet.getUserId()).thenReturn(savedWallet));
     }
 
     private Mono<Transaction> createTransaction(Wallet wallet, Type type, BigDecimal amount, Instant now) {
