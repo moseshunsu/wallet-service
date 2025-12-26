@@ -100,6 +100,33 @@ public class WalletServiceImpl implements WalletService {
                 .flatMap(savedWallet -> walletCache.remove(savedWallet.getUserId()).thenReturn(savedWallet));
     }
 
+    @Override
+    public Mono<Void> deleteWallet(String userId) {
+        return walletRepository.deleteByUserId(userId)
+                .flatMap(count -> count > 1
+                        ? Mono.empty()
+                        : Mono.error(notFound(userId))
+                );
+    }
+
+    @Override
+    public Mono<Wallet> withdrawMoney(String userId, BigDecimal amount) {
+        return walletRepository.findByUserId(userId)
+                .switchIfEmpty(Mono.error(notFound(userId)))
+                .filter(wallet -> validateWithdrawalAmount(wallet, amount))
+                .switchIfEmpty(Mono.error(new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Insufficient Amount!!!")))
+                .flatMap(wallet -> {
+                    wallet.setBalance(wallet.getBalance().subtract(amount));
+                    wallet.setUpdatedAt(clock.instant());
+                    return walletRepository.save(wallet);
+                })
+                .flatMap(savedWallet -> createTransaction(savedWallet, WITHDRAWAL, amount, clock.instant())
+                        .thenReturn(savedWallet))
+                .flatMap(savedWallet -> walletCache.remove(savedWallet.getUserId()).thenReturn(savedWallet));
+    }
+
     private Mono<Tuple2<Wallet, BigDecimal>> getSumDeposits(Wallet wallet) {
         return transactionRepository.findAllByWalletIdAndTypeAndTimestampAfter(
                         wallet.getId(),
@@ -132,33 +159,6 @@ public class WalletServiceImpl implements WalletService {
         wallet.setBalance(balance);
         wallet.setUpdatedAt(clock.instant());
         return walletRepository.save(wallet);
-    }
-
-    @Override
-    public Mono<Void> deleteWallet(String userId) {
-        return walletRepository.deleteByUserId(userId)
-                .flatMap(count -> count > 1
-                        ? Mono.empty()
-                        : Mono.error(notFound(userId))
-                );
-    }
-
-    @Override
-    public Mono<Wallet> withdrawMoney(String userId, BigDecimal amount) {
-        return walletRepository.findByUserId(userId)
-                .switchIfEmpty(Mono.error(notFound(userId)))
-                .filter(wallet -> validateWithdrawalAmount(wallet, amount))
-                .switchIfEmpty(Mono.error(new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Insufficient Amount!!!")))
-                .flatMap(wallet -> {
-                    wallet.setBalance(wallet.getBalance().subtract(amount));
-                    wallet.setUpdatedAt(Instant.now());
-                    return walletRepository.save(wallet);
-                })
-                .flatMap(savedWallet -> createTransaction(savedWallet, WITHDRAWAL, amount, clock.instant())
-                        .thenReturn(savedWallet))
-                .flatMap(savedWallet -> walletCache.remove(savedWallet.getUserId()).thenReturn(savedWallet));
     }
 
     private Mono<Transaction> createTransaction(Wallet wallet, Type type, BigDecimal amount, Instant now) {
